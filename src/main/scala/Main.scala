@@ -8,8 +8,9 @@ import com.jogamp.opengl.util._
 object Main {
 
   def main(args:Array[String]) = {
-    val glp = GLProfile.get(GLProfile.GL2)
+    val glp = GLProfile.get(GLProfile.GL3)
     val caps = new GLCapabilities(glp)
+    caps.setDoubleBuffered(true)
 
     val window = GLWindow.create(caps);
     window.setSize(300, 300);
