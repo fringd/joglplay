@@ -186,12 +186,13 @@ void main (void)
  * These helpers here are based on PMVMatrix code and common linear
  * algebra for matrix multiplication, translate and rotations.
  */
-    private void glMultMatrixf(final FloatBuffer a, final FloatBuffer b, FloatBuffer d) {
-        final int aP = a.position();
-        final int bP = b.position();
-        final int dP = d.position();
+    def glMultMatrixf(a:FloatBuffer, b:FloatBuffer, d:FloatBuffer) = {
+        val aP = a.position();
+        val bP = b.position();
+        val dP = d.position();
         for (int i = 0; i < 4; i++) {
-            final float ai0=a.get(aP+i+0*4),  ai1=a.get(aP+i+1*4),  ai2=a.get(aP+i+2*4),  ai3=a.get(aP+i+3*4);
+          val (ai0, ai1, ai2, ai3) =
+            (a.get(aP+i+0*4),  ai1=a.get(aP+i+1*4),  ai2=a.get(aP+i+2*4),  ai3=a.get(aP+i+3*4);
             d.put(dP+i+0*4 , ai0 * b.get(bP+0+0*4) + ai1 * b.get(bP+1+0*4) + ai2 * b.get(bP+2+0*4) + ai3 * b.get(bP+3+0*4) );
             d.put(dP+i+1*4 , ai0 * b.get(bP+0+1*4) + ai1 * b.get(bP+1+1*4) + ai2 * b.get(bP+2+1*4) + ai3 * b.get(bP+3+1*4) );
             d.put(dP+i+2*4 , ai0 * b.get(bP+0+2*4) + ai1 * b.get(bP+1+2*4) + ai2 * b.get(bP+2+2*4) + ai3 * b.get(bP+3+2*4) );
