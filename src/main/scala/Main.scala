@@ -113,124 +113,123 @@ object Main {
  * http://www.khronos.org/registry/gles/specs/2.0/GLSL_ES_Specification_1.0.17.pdf
  * sent to the GPU driver for compilation.
  */
-val vertexShader =
-"""#ifdef GL_ES 
-#version 100 
-precision mediump float; 
-precision mediump int; 
-#else 
-#version 110 
-#endif 
-uniform mat4    uniform_Projection; 
-attribute vec4  attribute_Position; 
-attribute vec4  attribute_Color; 
-varying vec4    varying_Color; 
-void main(void) 
-{ 
-  varying_Color = attribute_Color; 
-  gl_Position = uniform_Projection * attribute_Position; 
-} 
+
+  val vertexShader =
+"""#ifdef GL_ES
+#version 100
+precision mediump float;
+precision mediump int;
+#else
+#version 110
+#endif
+uniform mat4    uniform_Projection;
+attribute vec4  attribute_Position;
+attribute vec4  attribute_Color;
+varying vec4    varying_Color;
+void main(void)
+{
+  varying_Color = attribute_Color;
+  gl_Position = uniform_Projection * attribute_Position;
+}
 """
 
-/* Introducing the OpenGL ES 2 Fragment shader
- *
- * The main loop of the fragment shader gets executed for each visible
- * pixel fragment on the render buffer.
- *
- *       vertex-> *
- *      (0,1,-1) /f\
- *              /ffF\ <- This fragment F gl_FragCoord get interpolated
- *             /fffff\                   to (0.25,0.25,-1) based on the
- *   vertex-> *fffffff* <-vertex         three vertex gl_Position.
- *  (-1,-1,-1)           (1,-1,-1)
- *
- *
- * All incomming "varying" and gl_FragCoord data to the fragment shader
- * gets interpolated based on the vertex positions.
- *
- * The fragment shader produce and store the final color data output into
- * gl_FragColor.
- *
- * Is up to you to set the final colors and calculate lightning here based on
- * supplied position, color and normal data.
- *
- * The whole fragment shader program are a String containing GLSL ES language
- * http://www.khronos.org/registry/gles/specs/2.0/GLSL_ES_Specification_1.0.17.pdf
- * sent to the GPU driver for compilation.
- */
-static final String fragmentShader =
-"""#ifdef GL_ES 
-#version 100 
-precision mediump float; 
-precision mediump int; 
-#else 
-#version 110 
-#endif 
+  /* Introducing the OpenGL ES 2 Fragment shader
+   *
+   * The main loop of the fragment shader gets executed for each visible
+   * pixel fragment on the render buffer.
+   *
+   *       vertex-> *
+   *      (0,1,-1) /f\
+   *              /ffF\ <- This fragment F gl_FragCoord get interpolated
+   *             /fffff\                   to (0.25,0.25,-1) based on the
+   *   vertex-> *fffffff* <-vertex         three vertex gl_Position.
+   *  (-1,-1,-1)           (1,-1,-1)
+   *
+   *
+   * All incomming "varying" and gl_FragCoord data to the fragment shader
+   * gets interpolated based on the vertex positions.
+   *
+   * The fragment shader produce and store the final color data output into
+   * gl_FragColor.
+   *
+   * Is up to you to set the final colors and calculate lightning here based on
+   * supplied position, color and normal data.
+   *
+   * The whole fragment shader program are a String containing GLSL ES language
+   * http://www.khronos.org/registry/gles/specs/2.0/GLSL_ES_Specification_1.0.17.pdf
+   * sent to the GPU driver for compilation.
+   */
+  val fragmentShader =
+"""#ifdef GL_ES
+#version 100
+precision mediump float;
+precision mediump int;
+#else
+#version 110
+#endif
 
-varying   vec4    varying_Color; 
+varying   vec4    varying_Color;
 void main (void)
-{ 
-  gl_FragColor = varying_Color; 
-} 
+{
+  gl_FragColor = varying_Color;
+}
 """
 
-/* Introducing projection matrix helper functions
- *
- * OpenGL ES 2 vertex projection transformations gets applied inside the
- * vertex shader, all you have to do are to calculate and supply a projection matrix.
- *
- * Its recomended to use the com/jogamp/opengl/util/PMVMatrix.java
- * import com.jogamp.opengl.util.PMVMatrix;
- * To simplify all your projection model view matrix creation needs.
- *
- * These helpers here are based on PMVMatrix code and common linear
- * algebra for matrix multiplication, translate and rotations.
- */
+  /* Introducing projection matrix helper functions
+   *
+   * OpenGL ES 2 vertex projection transformations gets applied inside the
+   * vertex shader, all you have to do are to calculate and supply a projection matrix.
+   *
+   * Its recomended to use the com/jogamp/opengl/util/PMVMatrix.java
+   * import com.jogamp.opengl.util.PMVMatrix;
+   * To simplify all your projection model view matrix creation needs.
+   *
+   * These helpers here are based on PMVMatrix code and common linear
+   * algebra for matrix multiplication, translate and rotations.
+   */
     def glMultMatrixf(a:FloatBuffer, b:FloatBuffer, d:FloatBuffer) = {
-        val aP = a.position();
-        val bP = b.position();
-        val dP = d.position();
-        for (int i = 0; i < 4; i++) {
-          val (ai0, ai1, ai2, ai3) =
-            (a.get(aP+i+0*4),  ai1=a.get(aP+i+1*4),  ai2=a.get(aP+i+2*4),  ai3=a.get(aP+i+3*4);
-            d.put(dP+i+0*4 , ai0 * b.get(bP+0+0*4) + ai1 * b.get(bP+1+0*4) + ai2 * b.get(bP+2+0*4) + ai3 * b.get(bP+3+0*4) );
-            d.put(dP+i+1*4 , ai0 * b.get(bP+0+1*4) + ai1 * b.get(bP+1+1*4) + ai2 * b.get(bP+2+1*4) + ai3 * b.get(bP+3+1*4) );
-            d.put(dP+i+2*4 , ai0 * b.get(bP+0+2*4) + ai1 * b.get(bP+1+2*4) + ai2 * b.get(bP+2+2*4) + ai3 * b.get(bP+3+2*4) );
-            d.put(dP+i+3*4 , ai0 * b.get(bP+0+3*4) + ai1 * b.get(bP+1+3*4) + ai2 * b.get(bP+2+3*4) + ai3 * b.get(bP+3+3*4) );
-        }
+      val aP = a.position()
+      val bP = b.position()
+      val dP = d.position()
+      for (int i = 0; i < 4; i++) {
+        val (ai0, ai1, ai2, ai3) = (a.get(aP+i+0*4),  ai1=a.get(aP+i+1*4),  ai2=a.get(aP+i+2*4),  ai3=a.get(aP+i+3*4)
+        d.put(dP+i+0*4 , ai0 * b.get(bP+0+0*4) + ai1 * b.get(bP+1+0*4) + ai2 * b.get(bP+2+0*4) + ai3 * b.get(bP+3+0*4) )
+        d.put(dP+i+1*4 , ai0 * b.get(bP+0+1*4) + ai1 * b.get(bP+1+1*4) + ai2 * b.get(bP+2+1*4) + ai3 * b.get(bP+3+1*4) )
+        d.put(dP+i+2*4 , ai0 * b.get(bP+0+2*4) + ai1 * b.get(bP+1+2*4) + ai2 * b.get(bP+2+2*4) + ai3 * b.get(bP+3+2*4) )
+        d.put(dP+i+3*4 , ai0 * b.get(bP+0+3*4) + ai1 * b.get(bP+1+3*4) + ai2 * b.get(bP+2+3*4) + ai3 * b.get(bP+3+3*4) )
+      }
+      ()
     }
 
-    private float[] multiply(float[] a,float[] b){
-        float tmp[] = new float[16];
-        glMultMatrixf(FloatBuffer.wrap(a),FloatBuffer.wrap(b),FloatBuffer.wrap(tmp));
-        return tmp;
+    def multiply(a:Array[Float],b:Array[Float]) = {
+      val tmp = new Array[Float](16)
+      glMultMatrixf(FloatBuffer.wrap(a),FloatBuffer.wrap(b),FloatBuffer.wrap(tmp))
+      tmp
     }
 
-    private float[] translate(float[] m,float x,float y,float z){
-        float t[] = { 1.0f, 0.0f, 0.0f, 0.0f,
-                      0.0f, 1.0f, 0.0f, 0.0f,
-                      0.0f, 0.0f, 1.0f, 0.0f,
-                      x, y, z, 1.0f };
-        return multiply(m, t);
+    def translate(m:Array[Float], x:Float, y:Float, z:Float) = {
+      val t = Array( 1.0f, 0.0f, 0.0f, 0.0f,
+                    0.0f, 1.0f, 0.0f, 0.0f,
+                    0.0f, 0.0f, 1.0f, 0.0f,
+                    x, y, z, 1.0f )
+      return multiply(m, t)
     }
 
-    private float[] rotate(float[] m,float a,float x,float y,float z){
-        float s, c;
-        s = (float)Math.sin(Math.toRadians(a));
-        c = (float)Math.cos(Math.toRadians(a));
-        float r[] = {
-            x * x * (1.0f - c) + c,     y * x * (1.0f - c) + z * s, x * z * (1.0f - c) - y * s, 0.0f,
-            x * y * (1.0f - c) - z * s, y * y * (1.0f - c) + c,     y * z * (1.0f - c) + x * s, 0.0f,
-            x * z * (1.0f - c) + y * s, y * z * (1.0f - c) - x * s, z * z * (1.0f - c) + c,     0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f };
-            return multiply(m, r);
-        }
+    def rotate(m:Array[Float],a:Float, x:Float, y:Float, z:Float) = {
+      val (s,c) = (0.0f, 0.0f)
+      s = (float)Math.sin(Math.toRadians(a))
+      c = (float)Math.cos(Math.toRadians(a))
+      val r = Array(
+        x * x * (1.0f - c) + c,     y * x * (1.0f - c) + z * s, x * z * (1.0f - c) - y * s, 0.0f,
+        x * y * (1.0f - c) - z * s, y * y * (1.0f - c) + c,     y * z * (1.0f - c) + x * s, 0.0f,
+        x * z * (1.0f - c) + y * s, y * z * (1.0f - c) - x * s, z * z * (1.0f - c) + c,     0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+      )
+      return multiply(m, r)
+    }
 
-    private void printMatrix(float[] m){
-        System.out.println(m[0]+" "+m[1]+" "+m[2]+" "+m[3]+"\n"+
-                           m[4]+" "+m[5]+" "+m[6]+" "+m[7]+"\n"+
-                           m[8]+" "+m[9]+" "+m[10]+" "+m[11]+"\n"+
-                           m[12]+" "+m[13]+" "+m[14]+" "+m[15]+"\n");
+    def printMatrix( m:Array[Float] ):Unit = {
+      print( ("%f %f %f %f\n"*4).format(m:_*) )
     }
 
 /* Introducing the GL2ES demo
