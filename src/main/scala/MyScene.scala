@@ -8,9 +8,10 @@ import java.nio.{IntBuffer,FloatBuffer}
 
 object MyScene extends GLEventListener {
 
-  var x = 1.0f
 
-  var indices = new Array[Int](1)
+  var (shaderProgram, vertShader fragShader) = (0,0,0)
+
+  var ModelViewProjectionMatrix_location = 0
 
   def display(drawable:GLAutoDrawable) = {
     update()
@@ -19,24 +20,76 @@ object MyScene extends GLEventListener {
 
   def init(drawable:GLAutoDrawable) = {
     val gl = drawable.getGL().getGL2ES2()
-    gl.glClearColor(0.0f, 1.0f, 0.0f, 1.0f)
+    System.err.println("Chosen GLCapabilities: " + drawable.getChosenGLCapabilities())
+    System.err.println("INIT GL IS: " + gl.getClass().getName())
+    System.err.println("GL_VENDOR: " + gl.glGetString(GL.GL_VENDOR))
+    System.err.println("GL_RENDERER: " + gl.glGetString(GL.GL_RENDERER))
+    System.err.println("GL_VERSION: " + gl.glGetString(GL.GL_VERSION))
 
-    val triangle = Array( -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f,  1.0f, 0.0f)
+    vertShader = gl.glCreateShader(GL2ES2.GL_VERTEX_SHADER);
+    fragShader = gl.glCreateShader(GL2ES2.GL_FRAGMENT_SHADER);
 
-    gl.glGenBuffers(1, indices, 0)
-    gl.glBindBuffer(GL.GL_ARRAY_BUFFER, indices(0))
+    //Compile the vertexShader String into a program.
+    val vlines = Array( vertexShader )
+    val vlengths = Array( vlines(0).length() )
+    gl.glShaderSource(vertShader, vlines.length, vlines, vlengths, 0)
+    gl.glCompileShader(vertShader)
 
-    val buffer = FloatBuffer.wrap(triangle)
-    buffer.rewind() // is this needed?
+    //Check compile status.
+    val compiled = Array( 0 )
+    gl.glGetShaderiv(vertShader, GL2ES2.GL_COMPILE_STATUS, compiled,0)
+    if (compiled[0]!=0) {
+      println("Horray! vertex shader compiled")
+    } else {
+      val logLength = Array(0)
+      gl.glGetShaderiv(vertShader, GL2ES2.GL_INFO_LOG_LENGTH, logLength, 0)
 
-    gl.glBufferData(
-      GL.GL_ARRAY_BUFFER,
-      buffer.capacity() * 4, // 4 bytes per float?
-      buffer,
-      GL.GL_STATIC_DRAW
-    )
+      val log = new Array[Byte](logLength(0))
+      gl.glGetShaderInfoLog(vertShader, logLength(0), null, 0, log, 0)
 
-    loadShaders(gl)
+      println("Error compiling the vertex shader: " + new String(log))
+      System.exit(1)
+    }
+
+    //Compile the fragmentShader String into a program.
+    val flines = Array( fragmentShader )
+    val flengths = Array( flines[0].length() )
+    gl.glShaderSource(fragShader, flines.length, flines, flengths, 0)
+    gl.glCompileShader(fragShader)
+
+    //Check compile status.
+    gl.glGetShaderiv(fragShader, GL2ES2.GL_COMPILE_STATUS, compiled,0)
+    if(compiled(0)!=0){
+      println("Horray! fragment shader compiled")
+    }
+    else {
+      val logLength = new Array[Int](1)
+      gl.glGetShaderiv(fragShader, GL2ES2.GL_INFO_LOG_LENGTH, logLength, 0)
+
+      val log = new Array[Byte](logLength(0))
+      gl.glGetShaderInfoLog(fragShader, logLength(0), null, 0, log, 0)
+
+      println("Error compiling the fragment shader: " + new String(log))
+      System.exit(1)
+    }
+
+
+    //Each shaderProgram must have
+    //one vertex shader and one fragment shader.
+    shaderProgram = gl.glCreateProgram()
+    gl.glAttachShader(shaderProgram, vertShader)
+    gl.glAttachShader(shaderProgram, fragShader)
+
+    //Associate attribute ids with the attribute names inside
+    //the vertex shader.
+    gl.glBindAttribLocation(shaderProgram, 0, "attribute_Position")
+    gl.glBindAttribLocation(shaderProgram, 1, "attribute_Color")
+
+    gl.glLinkProgram(shaderProgram)
+
+    //Get a id number to the uniform_Projection matrix
+    //so that we can update it.
+    ModelViewProjectionMatrix_location = gl.glGetUniformLocation(shaderProgram, "uniform_Projection")
   }
 
   def dispose(drawable:GLAutoDrawable) = {

@@ -240,212 +240,136 @@ void main (void)
  * yet it do take some extra lines of code to setup.
  *
  */
-    private double theta=0;
-    private double s=0;
-    private double c=0;
+  var (theta, s, c) = (0.0, 0.0, 0.0)
 
-    private int shaderProgram;
-    private int vertShader;
-    private int fragShader;
-    private int ModelViewProjectionMatrix_location;
+  var (shaderProgram, vertShader fragShader) = (0,0,0)
 
-    public static void main(String[] s){
 
-        /* This demo are based on the GL2ES2 GLProfile that allows hardware acceleration
-         * on both desktop OpenGL 2 and mobile OpenGL ES 2 devices.
-         * JogAmp JOGL will probe all the installed libGL.so, libEGL.so and libGLESv2.so librarys on
-         * the system to find which one provide hardware acceleration for your GPU device.
-         * Its common to find more than one version of these librarys installed on a system.
-         * For example on a ARM Linux system JOGL may find
-         * Hardware accelerated Nvidia tegra GPU drivers in: /usr/lib/nvidia-tegra/libEGL.so
-         * Software rendered Mesa Gallium driver in: /usr/lib/arm-linux-gnueabi/mesa-egl/libEGL.so.1
-         * Software rendered Mesa X11 in: /usr/lib/arm-linux-gnueabi/mesa/libGL.so
-         * Good news!: JOGL does all this probing for you all you have to do are to ask for
-         * the GLProfile you want to use.
-         */
+  def main(args:Array[String]) = {
 
-        GLCapabilities caps = new GLCapabilities(GLProfile.get(GLProfile.GL2ES2));
-        GLWindow canvas = GLWindow.create(caps);
+    /* This demo are based on the GL2ES2 GLProfile that allows hardware acceleration
+     * on both desktop OpenGL 2 and mobile OpenGL ES 2 devices.
+     * JogAmp JOGL will probe all the installed libGL.so, libEGL.so and libGLESv2.so librarys on
+     * the system to find which one provide hardware acceleration for your GPU device.
+     * Its common to find more than one version of these librarys installed on a system.
+     * For example on a ARM Linux system JOGL may find
+     * Hardware accelerated Nvidia tegra GPU drivers in: /usr/lib/nvidia-tegra/libEGL.so
+     * Software rendered Mesa Gallium driver in: /usr/lib/arm-linux-gnueabi/mesa-egl/libEGL.so.1
+     * Software rendered Mesa X11 in: /usr/lib/arm-linux-gnueabi/mesa/libGL.so
+     * Good news!: JOGL does all this probing for you all you have to do are to ask for
+     * the GLProfile you want to use.
+     */
 
-        NewtCanvasAWT newtCanvas = new NewtCanvasAWT(canvas);
-        JFrame frame = new JFrame("RAW GL2ES2 Demo");
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setSize(300,300);
-        frame.add(newtCanvas);
-        //add some swing code if you like.
-        /* javax.swing.JButton b = new javax.swing.JButton();
-        b.setText("Hi");
-        frame.add(b); */
-        frame.setVisible(true);
+    val caps = new GLCapabilities(GLProfile.get(GLProfile.GL2ES2))
+    val canvas = GLWindow.create(caps)
 
-        canvas.addGLEventListener(new RawGL2ES2demo());
-        FPSAnimator animator = new FPSAnimator(canvas,60);
-        animator.add(canvas);
-        animator.start();
-    }
+    val newtCanvas = new NewtCanvasAWT(canvas)
+    val frame = new JFrame("RAW GL2ES2 Demo")
+    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE)
+    frame.setSize(300,300)
+    frame.add(newtCanvas)
+    //add some swing code if you like.
+    /* javax.swing.JButton b = new javax.swing.JButton();
+    b.setText("Hi");
+    frame.add(b); */
 
-    public void init(GLAutoDrawable drawable) {
-        GL2ES2 gl = drawable.getGL().getGL2ES2();
+    frame.setVisible(true)
 
-        System.err.println("Chosen GLCapabilities: " + drawable.getChosenGLCapabilities());
-        System.err.println("INIT GL IS: " + gl.getClass().getName());
-        System.err.println("GL_VENDOR: " + gl.glGetString(GL.GL_VENDOR));
-        System.err.println("GL_RENDERER: " + gl.glGetString(GL.GL_RENDERER));
-        System.err.println("GL_VERSION: " + gl.glGetString(GL.GL_VERSION));
+    canvas.addGLEventListener(new RawGL2ES2demo())
+    val animator = new FPSAnimator(canvas,60)
+    animator.add(canvas)
+    animator.start()
+  }
 
-        //Create shaders
-        //OpenGL ES retuns a index id to be stored for future reference.
-        vertShader = gl.glCreateShader(GL2ES2.GL_VERTEX_SHADER);
-        fragShader = gl.glCreateShader(GL2ES2.GL_FRAGMENT_SHADER);
+  public void reshape(GLAutoDrawable drawable, int x, int y, int z, int h) {
+  }
 
-        //Compile the vertexShader String into a program.
-        String[] vlines = new String[] { vertexShader };
-        int[] vlengths = new int[] { vlines[0].length() };
-        gl.glShaderSource(vertShader, vlines.length, vlines, vlengths, 0);
-        gl.glCompileShader(vertShader);
+  public void display(GLAutoDrawable drawable) {
+      // Update variables used in animation
+      theta += 0.08;
+      s = Math.sin(theta);
+      c = Math.cos(theta);
 
-        //Check compile status.
-        int[] compiled = new int[1];
-        gl.glGetShaderiv(vertShader, GL2ES2.GL_COMPILE_STATUS, compiled,0);
-        if(compiled[0]!=0){System.out.println("Horray! vertex shader compiled");}
-        else {
-            int[] logLength = new int[1];
-            gl.glGetShaderiv(vertShader, GL2ES2.GL_INFO_LOG_LENGTH, logLength, 0);
+      // Get gl
+      GL2ES2 gl = drawable.getGL().getGL2ES2();
 
-            byte[] log = new byte[logLength[0]];
-            gl.glGetShaderInfoLog(vertShader, logLength[0], (int[])null, 0, log, 0);
+      // Set viewport
+      //gl.glViewport(0,0,300,300);
 
-            System.err.println("Error compiling the vertex shader: " + new String(log));
-            System.exit(1);
-        }
+      // Clear screen
+      gl.glClearColor(1, 0, 1, 1);  //Purple
+      gl.glClear(GL2ES2.GL_COLOR_BUFFER_BIT | GL2ES2.GL_DEPTH_BUFFER_BIT);
 
-        //Compile the fragmentShader String into a program.
-        String[] flines = new String[] { fragmentShader };
-        int[] flengths = new int[] { flines[0].length() };
-        gl.glShaderSource(fragShader, flines.length, flines, flengths, 0);
-        gl.glCompileShader(fragShader);
+      // Use the shaderProgram that got linked during the init part.
+      gl.glUseProgram(shaderProgram);
 
-        //Check compile status.
-        gl.glGetShaderiv(fragShader, GL2ES2.GL_COMPILE_STATUS, compiled,0);
-        if(compiled[0]!=0){System.out.println("Horray! fragment shader compiled");}
-        else {
-            int[] logLength = new int[1];
-            gl.glGetShaderiv(fragShader, GL2ES2.GL_INFO_LOG_LENGTH, logLength, 0);
+      /* Change a projection matrix
+       * The matrix multiplications and OpenGL ES2 code below
+       * basically match this OpenGL ES1 code.
+       * note that the model_view_projection matrix gets sent to the vertexShader.
+       *
+       * gl.glLoadIdentity();
+       * gl.glTranslatef(0.0f,0.0f,-0.1f);
+       * gl.glRotatef((float)30f*(float)s,1.0f,0.0f,1.0f);
+       *
+       */
 
-            byte[] log = new byte[logLength[0]];
-            gl.glGetShaderInfoLog(fragShader, logLength[0], (int[])null, 0, log, 0);
+      float model_view_projection[];
+      float identity_matrix[] = {
+          1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f,
+      };
+      model_view_projection =  translate(identity_matrix,0.0f,0.0f, -0.1f);
+      model_view_projection =  rotate(model_view_projection,(float)30f*(float)s,1.0f,0.0f,1.0f);
 
-            System.err.println("Error compiling the fragment shader: " + new String(log));
-            System.exit(1);
-        }
+      // Send the final projection matrix to the vertex shader by
+      // using the uniform location id obtained during the init part.
+      gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, model_view_projection, 0);
 
-        //Each shaderProgram must have
-        //one vertex shader and one fragment shader.
-        shaderProgram = gl.glCreateProgram();
-        gl.glAttachShader(shaderProgram, vertShader);
-        gl.glAttachShader(shaderProgram, fragShader);
+      /*
+       *  Render a triangle:
+       *  The OpenGL ES2 code below basically match this OpenGL code.
+       *
+       *    gl.glBegin(GL_TRIANGLES);                      // Drawing Using Triangles
+       *    gl.glVertex3f( 0.0f, 1.0f, 0.0f);              // Top
+       *    gl.glVertex3f(-1.0f,-1.0f, 0.0f);              // Bottom Left
+       *    gl.glVertex3f( 1.0f,-1.0f, 0.0f);              // Bottom Right
+       *    gl.glEnd();                            // Finished Drawing The Triangle
+       */
 
-        //Associate attribute ids with the attribute names inside
-        //the vertex shader.
-        gl.glBindAttribLocation(shaderProgram, 0, "attribute_Position");
-        gl.glBindAttribLocation(shaderProgram, 1, "attribute_Color");
+      float vertices[] = {  0.0f,  1.0f, 0.0f, //Top
+                           -1.0f, -1.0f, 0.0f, //Bottom Left
+                            1.0f, -1.0f, 0.0f  //Bottom Right
+                                            };
 
-        gl.glLinkProgram(shaderProgram);
+      gl.glVertexAttribPointer(0, 3, GL2ES2.GL_FLOAT, false, 0, FloatBuffer.wrap(vertices));
+      gl.glEnableVertexAttribArray(0);
 
-        //Get a id number to the uniform_Projection matrix
-        //so that we can update it.
-        ModelViewProjectionMatrix_location = gl.glGetUniformLocation(shaderProgram, "uniform_Projection");
-    }
+      float colors[] = {    1.0f, 0.0f, 0.0f, //Top color (red)
+                            0.0f, 0.0f, 0.0f, //Bottom Left color (black)
+                            1.0f, 1.0f, 0.0f  //Bottom Right color (yellow)
+                                           };
+                                           
+      gl.glVertexAttribPointer(1, 3, GL2ES2.GL_FLOAT, false, 0, FloatBuffer.wrap(colors));
+      gl.glEnableVertexAttribArray(1);
 
-    public void reshape(GLAutoDrawable drawable, int x, int y, int z, int h) {
-    }
+      gl.glDrawArrays(GL2ES2.GL_TRIANGLES, 0, 3); //Draw the vertices as triangle
+      
+      gl.glDisableVertexAttribArray(0); // Allow release of vertex position memory
+      gl.glDisableVertexAttribArray(1); // Allow release of vertex color memory		
+  }
 
-    public void display(GLAutoDrawable drawable) {
-        // Update variables used in animation
-        theta += 0.08;
-        s = Math.sin(theta);
-        c = Math.cos(theta);
-
-        // Get gl
-        GL2ES2 gl = drawable.getGL().getGL2ES2();
-
-        // Set viewport
-        //gl.glViewport(0,0,300,300);
-
-        // Clear screen
-        gl.glClearColor(1, 0, 1, 1);  //Purple
-        gl.glClear(GL2ES2.GL_COLOR_BUFFER_BIT | GL2ES2.GL_DEPTH_BUFFER_BIT);
-
-        // Use the shaderProgram that got linked during the init part.
-        gl.glUseProgram(shaderProgram);
-
-        /* Change a projection matrix
-         * The matrix multiplications and OpenGL ES2 code below
-         * basically match this OpenGL ES1 code.
-         * note that the model_view_projection matrix gets sent to the vertexShader.
-         *
-         * gl.glLoadIdentity();
-         * gl.glTranslatef(0.0f,0.0f,-0.1f);
-         * gl.glRotatef((float)30f*(float)s,1.0f,0.0f,1.0f);
-         *
-         */
-
-        float model_view_projection[];
-        float identity_matrix[] = {
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f,
-        };
-        model_view_projection =  translate(identity_matrix,0.0f,0.0f, -0.1f);
-        model_view_projection =  rotate(model_view_projection,(float)30f*(float)s,1.0f,0.0f,1.0f);
-
-        // Send the final projection matrix to the vertex shader by
-        // using the uniform location id obtained during the init part.
-        gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, model_view_projection, 0);
-
-        /*
-         *  Render a triangle:
-         *  The OpenGL ES2 code below basically match this OpenGL code.
-         *
-         *    gl.glBegin(GL_TRIANGLES);                      // Drawing Using Triangles
-         *    gl.glVertex3f( 0.0f, 1.0f, 0.0f);              // Top
-         *    gl.glVertex3f(-1.0f,-1.0f, 0.0f);              // Bottom Left
-         *    gl.glVertex3f( 1.0f,-1.0f, 0.0f);              // Bottom Right
-         *    gl.glEnd();                            // Finished Drawing The Triangle
-         */
-
-        float vertices[] = {  0.0f,  1.0f, 0.0f, //Top
-                             -1.0f, -1.0f, 0.0f, //Bottom Left
-                              1.0f, -1.0f, 0.0f  //Bottom Right
-                                              };
-
-        gl.glVertexAttribPointer(0, 3, GL2ES2.GL_FLOAT, false, 0, FloatBuffer.wrap(vertices));
-        gl.glEnableVertexAttribArray(0);
-
-        float colors[] = {    1.0f, 0.0f, 0.0f, //Top color (red)
-                              0.0f, 0.0f, 0.0f, //Bottom Left color (black)
-                              1.0f, 1.0f, 0.0f  //Bottom Right color (yellow)
-                                             };
-                                             
-        gl.glVertexAttribPointer(1, 3, GL2ES2.GL_FLOAT, false, 0, FloatBuffer.wrap(colors));
-        gl.glEnableVertexAttribArray(1);
-
-        gl.glDrawArrays(GL2ES2.GL_TRIANGLES, 0, 3); //Draw the vertices as triangle
-        
-        gl.glDisableVertexAttribArray(0); // Allow release of vertex position memory
-        gl.glDisableVertexAttribArray(1); // Allow release of vertex color memory		
-    }
-
-    public void dispose(GLAutoDrawable drawable){
-        System.out.println("cleanup, remember to release shaders");
-        GL2ES2 gl = drawable.getGL().getGL2ES2();
-        gl.glUseProgram(0);
-        gl.glDetachShader(shaderProgram, vertShader);
-        gl.glDeleteShader(vertShader);
-        gl.glDetachShader(shaderProgram, fragShader);
-        gl.glDeleteShader(fragShader);
-        gl.glDeleteProgram(shaderProgram);
-        System.exit(0);
-    }
+  public void dispose(GLAutoDrawable drawable){
+      System.out.println("cleanup, remember to release shaders");
+      GL2ES2 gl = drawable.getGL().getGL2ES2();
+      gl.glUseProgram(0);
+      gl.glDetachShader(shaderProgram, vertShader);
+      gl.glDeleteShader(vertShader);
+      gl.glDetachShader(shaderProgram, fragShader);
+      gl.glDeleteShader(fragShader);
+      gl.glDeleteProgram(shaderProgram);
+      System.exit(0);
+  }
 }
