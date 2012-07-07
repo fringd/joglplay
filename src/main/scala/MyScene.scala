@@ -116,8 +116,8 @@ void main (void)
     val aP = a.position()
     val bP = b.position()
     val dP = d.position()
-    for (int i = 0; i < 4; i++) {
-      val (ai0, ai1, ai2, ai3) = (a.get(aP+i+0*4),  ai1=a.get(aP+i+1*4),  ai2=a.get(aP+i+2*4),  ai3=a.get(aP+i+3*4)
+    for (i <- 0 until 4) {
+      val (ai0, ai1, ai2, ai3) = (a.get(aP+i+0*4),  a.get(aP+i+1*4),  a.get(aP+i+2*4),  a.get(aP+i+3*4))
       d.put(dP+i+0*4 , ai0 * b.get(bP+0+0*4) + ai1 * b.get(bP+1+0*4) + ai2 * b.get(bP+2+0*4) + ai3 * b.get(bP+3+0*4) )
       d.put(dP+i+1*4 , ai0 * b.get(bP+0+1*4) + ai1 * b.get(bP+1+1*4) + ai2 * b.get(bP+2+1*4) + ai3 * b.get(bP+3+1*4) )
       d.put(dP+i+2*4 , ai0 * b.get(bP+0+2*4) + ai1 * b.get(bP+1+2*4) + ai2 * b.get(bP+2+2*4) + ai3 * b.get(bP+3+2*4) )
@@ -126,13 +126,13 @@ void main (void)
     ()
   }
 
-  def multiply(a:Array[Float],b:Array[Float]) = {
+  def multiply(a:Array[Float],b:Array[Float]):Array[Float] = {
     val tmp = new Array[Float](16)
     glMultMatrixf(FloatBuffer.wrap(a),FloatBuffer.wrap(b),FloatBuffer.wrap(tmp))
-    tmp
+    return tmp
   }
 
-  def translate(m:Array[Float], x:Float, y:Float, z:Float) = {
+  def translate(m:Array[Float], x:Float, y:Float, z:Float):Array[Float] = {
     val t = Array( 1.0f, 0.0f, 0.0f, 0.0f,
                   0.0f, 1.0f, 0.0f, 0.0f,
                   0.0f, 0.0f, 1.0f, 0.0f,
@@ -140,10 +140,10 @@ void main (void)
     return multiply(m, t)
   }
 
-  def rotate(m:Array[Float],a:Float, x:Float, y:Float, z:Float) = {
-    val (s,c) = (0.0f, 0.0f)
-    s = (float)Math.sin(Math.toRadians(a))
-    c = (float)Math.cos(Math.toRadians(a))
+  def rotate(m:Array[Float],a:Float, x:Float, y:Float, z:Float):Array[Float] = {
+    var (s,c) = (0.0f, 0.0f)
+    s = Math.sin(Math.toRadians(a)).toFloat
+    c = Math.cos(Math.toRadians(a)).toFloat
     val r = Array(
       x * x * (1.0f - c) + c,     y * x * (1.0f - c) + z * s, x * z * (1.0f - c) - y * s, 0.0f,
       x * y * (1.0f - c) - z * s, y * y * (1.0f - c) + c,     y * z * (1.0f - c) + x * s, 0.0f,
@@ -159,7 +159,7 @@ void main (void)
 
 
   /* variables */
-  var (shaderProgram, vertShader fragShader) = (0,0,0)
+  var (shaderProgram, vertShader, fragShader) = (0,0,0)
 
   var ModelViewProjectionMatrix_location = 0
 
@@ -189,15 +189,15 @@ void main (void)
     gl.glCompileShader(vertShader)
 
     //Check compile status.
-    val compiled = Array( 0 )
+    var compiled = Array( 0 )
     gl.glGetShaderiv(vertShader, GL2ES2.GL_COMPILE_STATUS, compiled,0)
-    if (compiled[0]!=0) {
+    if (compiled(0)!=0) {
       println("Horray! vertex shader compiled")
     } else {
-      val logLength = Array(0)
+      var logLength = Array(0)
       gl.glGetShaderiv(vertShader, GL2ES2.GL_INFO_LOG_LENGTH, logLength, 0)
 
-      val log = new Array[Byte](logLength(0))
+      var log = new Array[Byte](logLength(0))
       gl.glGetShaderInfoLog(vertShader, logLength(0), null, 0, log, 0)
 
       println("Error compiling the vertex shader: " + new String(log))
@@ -206,7 +206,7 @@ void main (void)
 
     //Compile the fragmentShader String into a program.
     val flines = Array( fragmentShader )
-    val flengths = Array( flines[0].length() )
+    val flengths = Array( flines(0).length() )
     gl.glShaderSource(fragShader, flines.length, flines, flengths, 0)
     gl.glCompileShader(fragShader)
 
@@ -216,10 +216,10 @@ void main (void)
       println("Horray! fragment shader compiled")
     }
     else {
-      val logLength = new Array[Int](1)
+      var logLength = new Array[Int](1)
       gl.glGetShaderiv(fragShader, GL2ES2.GL_INFO_LOG_LENGTH, logLength, 0)
 
-      val log = new Array[Byte](logLength(0))
+      var log = new Array[Byte](logLength(0))
       gl.glGetShaderInfoLog(fragShader, logLength(0), null, 0, log, 0)
 
       println("Error compiling the fragment shader: " + new String(log))
@@ -247,7 +247,7 @@ void main (void)
 
   def dispose(drawable:GLAutoDrawable) = {
     System.out.println("cleanup, remember to release shaders")
-    GL2ES2 gl = drawable.getGL().getGL2ES2()
+    val gl = drawable.getGL().getGL2ES2()
     gl.glUseProgram(0)
     gl.glDetachShader(shaderProgram, vertShader)
     gl.glDeleteShader(vertShader)
@@ -291,11 +291,11 @@ void main (void)
       1.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 1.0f, 0.0f, 0.0f,
       0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
     )
 
     model_view_projection =  translate(identity_matrix,0.0f,0.0f, -0.1f)
-    model_view_projection =  rotate(model_view_projection,30f*s,1.0f,0.0f,1.0f)
+    model_view_projection =  rotate(model_view_projection,(30f*s).toFloat,1.0f,0.0f,1.0f)
 
     // Send the final projection matrix to the vertex shader by
     // using the uniform location id obtained during the init part.
@@ -331,22 +331,11 @@ void main (void)
     gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, FloatBuffer.wrap(colors))
     gl.glEnableVertexAttribArray(1)
 
-    gl.glDrawArrays(GL2ES2.GL_TRIANGLES, 0, 3); //Draw the vertices as triangle
+    gl.glDrawArrays(GL.GL_TRIANGLES, 0, 3); //Draw the vertices as triangle
     
     gl.glDisableVertexAttribArray(0); // Allow release of vertex position memory
     gl.glDisableVertexAttribArray(1); // Allow release of vertex color memory		
 
-
-
-
-    gl.glEnableVertexAttribArray(0)
-    gl.glBindBuffer(GL.GL_ARRAY_BUFFER, indices(0))
-    gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0)
-
-    gl.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
-    gl.glDisableVertexAttribArray(0)
-
-    drawable.swapBuffers()
   }
 
 }

@@ -82,10 +82,6 @@ import javax.media.opengl.awt.GLCanvas
 
 object Main {
 
-
-
-
-
 /* Introducing the GL2ES demo
  *
  * How to render a triangle using 424 lines of code using the RAW
@@ -97,7 +93,7 @@ object Main {
 
 
 
-  def main(args:Array[String]) = {
+  def main(args:Array[String]):Unit = {
 
     /* This demo are based on the GL2ES2 GLProfile that allows hardware acceleration
      * on both desktop OpenGL 2 and mobile OpenGL ES 2 devices.
@@ -117,7 +113,7 @@ object Main {
 
     val newtCanvas = new NewtCanvasAWT(canvas)
     val frame = new JFrame("RAW GL2ES2 Demo")
-    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE)
+    frame.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE)
     frame.setSize(300,300)
     frame.add(newtCanvas)
     //add some swing code if you like.
