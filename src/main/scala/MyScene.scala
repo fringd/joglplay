@@ -243,6 +243,64 @@ void main (void)
     //Get a id number to the uniform_Projection matrix
     //so that we can update it.
     ModelViewProjectionMatrix_location = gl.glGetUniformLocation(shaderProgram, "uniform_Projection")
+
+    initVBO(gl)
+  }
+
+  val numberOfVBO = 2
+
+  val VBO = new Array[Int](numberOfVBO)
+
+  var numberOfPoints = -1 // will be set by initVBO
+
+  def initVBO(gl:GL2ES2):Unit = {
+    gl.glGenBuffers(numberOfVBO, VBO, 0)
+
+     gl.glEnableVertexAttribArray(0)
+     gl.glEnableVertexAttribArray(1)
+
+
+    /*
+     *  Render a triangle:
+     *  The OpenGL ES2 code below basically match this OpenGL code.
+     *
+     *    gl.glBegin(GL_TRIANGLES);                      // Drawing Using Triangles
+     *    gl.glVertex3f( 0.0f, 1.0f, 0.0f);              // Top
+     *    gl.glVertex3f(-1.0f,-1.0f, 0.0f);              // Bottom Left
+     *    gl.glVertex3f( 1.0f,-1.0f, 0.0f);              // Bottom Right
+     *    gl.glEnd();                            // Finished Drawing The Triangle
+     */
+
+    val triangleCount = 30
+
+    val vertices = new Array[Float]((triangleCount+2)*3)
+
+    numberOfPoints = triangleCount+2
+
+    vertices(0) = 0
+    vertices(1) = 0
+    vertices(2) = 0
+    for (i <- 1 until triangleCount+1) {
+      val angle = 2 * math.Pi * i.toFloat / triangleCount.toFloat
+      val (x,y) = (Math.cos(angle), Math.sin(angle))
+      vertices(i*3) = x.toFloat
+      vertices(i*3+1) = y.toFloat
+      vertices(i*3+2) = 0
+    }
+
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(0) )
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, vertices.length, FloatBuffer.wrap(vertices), GL.GL_STATIC_DRAW )
+
+    val colors = new Array[Float](vertices.length) // x,y,z r,g,b so same number of floats
+    for (i <- 0 until numberOfPoints) {
+      val percent = i.toFloat / (numberOfPoints).toFloat
+      colors(3*i) = percent
+      colors(3*i+1) = 1.0f - percent
+      colors(3*i+2) = math.abs(1.0f - 2.0f*percent)
+    }
+
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(1) )
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, colors.length, FloatBuffer.wrap(colors), GL.GL_STATIC_DRAW )
   }
 
   def dispose(drawable:GLAutoDrawable) = {
@@ -254,6 +312,7 @@ void main (void)
     gl.glDetachShader(shaderProgram, fragShader)
     gl.glDeleteShader(fragShader)
     gl.glDeleteProgram(shaderProgram)
+    gl.glDeleteBuffers(numberOfVBO, VBO, 0)
     System.exit(0)
   }
 
@@ -301,51 +360,19 @@ void main (void)
     // using the uniform location id obtained during the init part.
     gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, model_view_projection, 0)
 
-    /*
-     *  Render a triangle:
-     *  The OpenGL ES2 code below basically match this OpenGL code.
-     *
-     *    gl.glBegin(GL_TRIANGLES);                      // Drawing Using Triangles
-     *    gl.glVertex3f( 0.0f, 1.0f, 0.0f);              // Top
-     *    gl.glVertex3f(-1.0f,-1.0f, 0.0f);              // Bottom Left
-     *    gl.glVertex3f( 1.0f,-1.0f, 0.0f);              // Bottom Right
-     *    gl.glEnd();                            // Finished Drawing The Triangle
-     */
 
-    val triangleCount = 30
+    // bind the vertices
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(0) )
+    gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0)
 
-    val vertices = new Array[Float]((triangleCount+2)*3)
-    vertices(0) = 0
-    vertices(1) = 0
-    vertices(2) = 0
-    for (i <- 1 to triangleCount+1) {
-      val angle = 2 * math.Pi * i.toFloat / triangleCount.toFloat
-      val (x,y) = (Math.cos(angle), Math.sin(angle))
-      vertices(i*3) = x.toFloat
-      vertices(i*3+1) = y.toFloat
-      vertices(i*3+2) = 0
-    }
+    // bind the colors
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(1) )
+    gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0)
 
-    gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, FloatBuffer.wrap(vertices))
-    gl.glEnableVertexAttribArray(0)
+    // draw some triangles
+    gl.glDrawArrays( GL.GL_TRIANGLE_FAN, 0, numberOfPoints )
 
-
-    val colors = new Array[Float](vertices.length) // x,y,z r,g,b so same number of floats
-    for (i <- 0 until vertices.length/3) {
-      val percent = i.toFloat / (vertices.length/3).toFloat
-      colors(3*i) = percent
-      colors(3*i+1) = 1.0f - percent
-      colors(3*i+2) = math.abs(1.0f - 2.0f*percent)
-    }
-
-
-    gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, FloatBuffer.wrap(colors))
-    gl.glEnableVertexAttribArray(1)
-
-    gl.glDrawArrays(GL.GL_TRIANGLE_FAN, 0, triangleCount+2); //Draw the vertices as triangle
-    
-    gl.glDisableVertexAttribArray(0); // Allow release of vertex position memory
-    gl.glDisableVertexAttribArray(1); // Allow release of vertex color memory		
+    gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
   }
 
