@@ -312,26 +312,37 @@ void main (void)
      *    gl.glEnd();                            // Finished Drawing The Triangle
      */
 
-    val vertices = Array(
-      0.0f,  1.0f, 0.0f, //Top
-      -1.0f, -1.0f, 0.0f, //Bottom Left
-      1.0f, -1.0f, 0.0f  //Bottom Right
-    )
+    val triangleCount = 30
+
+    val vertices = new Array[Float]((triangleCount+2)*3)
+    vertices(0) = 0
+    vertices(1) = 0
+    vertices(2) = 0
+    for (i <- 1 to triangleCount+1) {
+      val angle = 2 * math.Pi * i.toFloat / triangleCount.toFloat
+      val (x,y) = (Math.cos(angle), Math.sin(angle))
+      vertices(i*3) = x.toFloat
+      vertices(i*3+1) = y.toFloat
+      vertices(i*3+2) = 0
+    }
 
     gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, FloatBuffer.wrap(vertices))
     gl.glEnableVertexAttribArray(0)
 
-    val colors = Array(
-      1.0f, 0.0f, 0.0f, //Top color (red)
-      0.0f, 0.0f, 0.0f, //Bottom Left color (black)
-      1.0f, 1.0f, 0.0f  //Bottom Right color (yellow)
-    )
+
+    val colors = new Array[Float](vertices.length) // x,y,z r,g,b so same number of floats
+    for (i <- 0 until vertices.length/3) {
+      val percent = i.toFloat / (vertices.length/3).toFloat
+      colors(3*i) = percent
+      colors(3*i+1) = 1.0f - percent
+      colors(3*i+2) = math.abs(1.0f - 2.0f*percent)
+    }
 
 
     gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, FloatBuffer.wrap(colors))
     gl.glEnableVertexAttribArray(1)
 
-    gl.glDrawArrays(GL.GL_TRIANGLES, 0, 3); //Draw the vertices as triangle
+    gl.glDrawArrays(GL.GL_TRIANGLE_FAN, 0, triangleCount+2); //Draw the vertices as triangle
     
     gl.glDisableVertexAttribArray(0); // Allow release of vertex position memory
     gl.glDisableVertexAttribArray(1); // Allow release of vertex color memory		
