@@ -271,7 +271,7 @@ void main (void)
      *    gl.glEnd();                            // Finished Drawing The Triangle
      */
 
-    val triangleCount = 30
+    val triangleCount = 3
 
     val vertices = new Array[Float]((triangleCount+2)*3)
 
@@ -280,7 +280,7 @@ void main (void)
     vertices(0) = 0
     vertices(1) = 0
     vertices(2) = 0
-    for (i <- 1 until triangleCount+1) {
+    for (i <- 1 until numberOfPoints) {
       val angle = 2 * math.Pi * i.toFloat / triangleCount.toFloat
       val (x,y) = (Math.cos(angle), Math.sin(angle))
       vertices(i*3) = x.toFloat
@@ -289,9 +289,9 @@ void main (void)
     }
 
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(0) )
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, vertices.length, FloatBuffer.wrap(vertices), GL.GL_STATIC_DRAW )
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4*vertices.length, FloatBuffer.wrap(vertices), GL.GL_STATIC_DRAW )
 
-    val colors = new Array[Float](vertices.length) // x,y,z r,g,b so same number of floats
+    val colors = new Array[Float](numberOfPoints * 3) // x,y,z r,g,b so same number of floats
     for (i <- 0 until numberOfPoints) {
       val percent = i.toFloat / (numberOfPoints).toFloat
       colors(3*i) = percent
@@ -300,7 +300,7 @@ void main (void)
     }
 
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(1) )
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, colors.length, FloatBuffer.wrap(colors), GL.GL_STATIC_DRAW )
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4*colors.length, FloatBuffer.wrap(colors), GL.GL_STATIC_DRAW )
   }
 
   def dispose(drawable:GLAutoDrawable) = {
