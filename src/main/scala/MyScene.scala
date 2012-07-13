@@ -288,6 +288,7 @@ void main (void)
       vertices(i*3+2) = 0
     }
 
+    /*W00T*/
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(0) )
     gl.glBufferData( GL.GL_ARRAY_BUFFER, 4*vertices.length, FloatBuffer.wrap(vertices), GL.GL_STATIC_DRAW )
 
