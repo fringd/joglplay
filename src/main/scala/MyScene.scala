@@ -137,7 +137,7 @@ void main (void)
                   0.0f, 1.0f, 0.0f, 0.0f,
                   0.0f, 0.0f, 1.0f, 0.0f,
                   x, y, z, 1.0f )
-    return multiply(m, t)
+    multiply(m, t)
   }
 
   def rotate(m:Array[Float],a:Float, x:Float, y:Float, z:Float):Array[Float] = {
@@ -150,7 +150,27 @@ void main (void)
       x * z * (1.0f - c) + y * s, y * z * (1.0f - c) - x * s, z * z * (1.0f - c) + c,     0.0f,
       0.0f, 0.0f, 0.0f, 1.0f
     )
-    return multiply(m, r)
+    multiply(m, r)
+  }
+
+  def scale(m:Array[Float], x:Float, y:Float, z:Float):Array[Float] = {
+    val r = Array(
+      x, 0.0f, 0.0f, 0.0f,
+      0.0f, y, 0.0f, 0.0f,
+      0.0f, 0.0f, z, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+    )
+    multiply(m, r)
+  }
+
+  def perspective(near:Float, far:Float, verticalViewAngle:Float, aspectRatio:Float) = {
+    val d = 1f / (math.tan(verticalViewAngle/2)).toFloat
+    Array(
+      d/aspectRatio, 0f, 0f, 0f,
+      0f, d, 0f, 0f,
+      0f, 0f, (near+far)/(near-far), 2*near*far/(near-far),
+      0f, 0f, -1f, 0f
+    )
   }
 
   def printMatrix( m:Array[Float] ):Unit = {
@@ -247,17 +267,14 @@ void main (void)
     initVBO(gl)
   }
 
-  val numberOfVBO = 2
 
-  val VBO = new Array[Int](numberOfVBO)
-
-  var numberOfPoints = -1 // will be set by initVBO
+  var pointBuffer:EasyArrayBuffer = _
+  var colorBuffer:EasyArrayBuffer = _
+  var numberOfPoints:Int = _
 
   def initVBO(gl:GL2ES2):Unit = {
-    gl.glGenBuffers(numberOfVBO, VBO, 0)
-
-     gl.glEnableVertexAttribArray(0)
-     gl.glEnableVertexAttribArray(1)
+    gl.glEnableVertexAttribArray(0)
+    gl.glEnableVertexAttribArray(1)
 
 
     /*
@@ -269,7 +286,7 @@ void main (void)
      *    gl.glVertex3f(-1.0f,-1.0f, 0.0f);              // Bottom Left
      *    gl.glVertex3f( 1.0f,-1.0f, 0.0f);              // Bottom Right
      *    gl.glEnd();                            // Finished Drawing The Triangle
-     */
+    **/
 
     val triangleCount = 3
 
@@ -289,8 +306,7 @@ void main (void)
     }
 
     /*W00T*/
-    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(0) )
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4*vertices.length, FloatBuffer.wrap(vertices), GL.GL_STATIC_DRAW )
+    pointBuffer = new EasyArrayBuffer(vertices, gl)
 
     val colors = new Array[Float](numberOfPoints * 3) // x,y,z r,g,b so same number of floats
     for (i <- 0 until numberOfPoints) {
@@ -300,8 +316,8 @@ void main (void)
       colors(3*i+2) = math.abs(1.0f - 2.0f*percent)
     }
 
-    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(1) )
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4*colors.length, FloatBuffer.wrap(colors), GL.GL_STATIC_DRAW )
+    colorBuffer = new EasyArrayBuffer(colors, gl)
+
   }
 
   def dispose(drawable:GLAutoDrawable) = {
@@ -313,7 +329,8 @@ void main (void)
     gl.glDetachShader(shaderProgram, fragShader)
     gl.glDeleteShader(fragShader)
     gl.glDeleteProgram(shaderProgram)
-    gl.glDeleteBuffers(numberOfVBO, VBO, 0)
+    pointBuffer.dispose
+    colorBuffer.dispose
     System.exit(0)
   }
 
@@ -346,7 +363,6 @@ void main (void)
      *
      */
 
-    var model_view_projection = new Array[Float](0)
     val identity_matrix = Array(
       1.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 1.0f, 0.0f, 0.0f,
@@ -354,23 +370,33 @@ void main (void)
       0.0f, 0.0f, 0.0f, 1.0f
     )
 
-    model_view_projection =  translate(identity_matrix,0.0f,0.0f, -0.1f)
-    model_view_projection =  rotate(model_view_projection,(30f*s).toFloat,1.0f,0.0f,1.0f)
+    var view_projection = translate(identity_matrix,0.0f,0.0f, -3f + c.toFloat)
+    view_projection = multiply(perspective(1f, 5f, 1.5f, 1f), view_projection)
+
+    var model1_matrix = translate(identity_matrix, 1.0f, 0.0f, 0.0f)
+    model1_matrix =  rotate(model1_matrix,(30f*s).toFloat,0.0f,0.0f,1.0f)
+
+    var model2_matrix = translate(identity_matrix, -1.0f, 0.0f, 0.0f)
+    model2_matrix =  rotate(model2_matrix,(30f*c).toFloat,0.0f,0.0f,1.0f)
 
     // Send the final projection matrix to the vertex shader by
     // using the uniform location id obtained during the init part.
-    gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, model_view_projection, 0)
+    gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, multiply(view_projection, model1_matrix ), 0)
 
 
     // bind the vertices
-    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(0) )
+    pointBuffer.bind
     gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0)
 
     // bind the colors
-    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, VBO(1) )
+    colorBuffer.bind
     gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0)
 
     // draw some triangles
+    gl.glDrawArrays( GL.GL_TRIANGLE_FAN, 0, numberOfPoints )
+
+    gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, multiply(view_projection, model2_matrix ), 0)
+
     gl.glDrawArrays( GL.GL_TRIANGLE_FAN, 0, numberOfPoints )
 
     gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
