@@ -268,55 +268,15 @@ void main (void)
   }
 
 
-  var pointBuffer:EasyArrayBuffer = _
-  var colorBuffer:EasyArrayBuffer = _
-  var numberOfPoints:Int = _
+  var circle:Circle = _
+  var circle2:Circle = _
 
   def initVBO(gl:GL2ES2):Unit = {
     gl.glEnableVertexAttribArray(0)
     gl.glEnableVertexAttribArray(1)
 
-
-    /*
-     *  Render a triangle:
-     *  The OpenGL ES2 code below basically match this OpenGL code.
-     *
-     *    gl.glBegin(GL_TRIANGLES);                      // Drawing Using Triangles
-     *    gl.glVertex3f( 0.0f, 1.0f, 0.0f);              // Top
-     *    gl.glVertex3f(-1.0f,-1.0f, 0.0f);              // Bottom Left
-     *    gl.glVertex3f( 1.0f,-1.0f, 0.0f);              // Bottom Right
-     *    gl.glEnd();                            // Finished Drawing The Triangle
-    **/
-
-    val triangleCount = 3
-
-    val vertices = new Array[Float]((triangleCount+2)*3)
-
-    numberOfPoints = triangleCount+2
-
-    vertices(0) = 0
-    vertices(1) = 0
-    vertices(2) = 0
-    for (i <- 1 until numberOfPoints) {
-      val angle = 2 * math.Pi * i.toFloat / triangleCount.toFloat
-      val (x,y) = (Math.cos(angle), Math.sin(angle))
-      vertices(i*3) = x.toFloat
-      vertices(i*3+1) = y.toFloat
-      vertices(i*3+2) = 0
-    }
-
-    /*W00T*/
-    pointBuffer = new EasyArrayBuffer(vertices, gl)
-
-    val colors = new Array[Float](numberOfPoints * 3) // x,y,z r,g,b so same number of floats
-    for (i <- 0 until numberOfPoints) {
-      val percent = i.toFloat / (numberOfPoints).toFloat
-      colors(3*i) = percent
-      colors(3*i+1) = 1.0f - percent
-      colors(3*i+2) = math.abs(1.0f - 2.0f*percent)
-    }
-
-    colorBuffer = new EasyArrayBuffer(colors, gl)
+    circle = new Circle(gl, 1.2f, 6)
+    circle2 = new Circle(gl, 0.8f, 4)
 
   }
 
@@ -329,8 +289,8 @@ void main (void)
     gl.glDetachShader(shaderProgram, fragShader)
     gl.glDeleteShader(fragShader)
     gl.glDeleteProgram(shaderProgram)
-    pointBuffer.dispose
-    colorBuffer.dispose
+    circle.dispose
+    circle2.dispose
     System.exit(0)
   }
 
@@ -385,21 +345,14 @@ void main (void)
 
 
     // bind the vertices
-    pointBuffer.bind
-    gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0)
-
-    // bind the colors
-    colorBuffer.bind
-    gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0)
+    circle.draw
 
     // draw some triangles
-    gl.glDrawArrays( GL.GL_TRIANGLE_FAN, 0, numberOfPoints )
 
     gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, multiply(view_projection, model2_matrix ), 0)
 
-    gl.glDrawArrays( GL.GL_TRIANGLE_FAN, 0, numberOfPoints )
+    circle2.draw
 
-    gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
   }
 
