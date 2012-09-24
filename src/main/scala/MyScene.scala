@@ -41,21 +41,19 @@ object MyScene extends GLEventListener {
  */
 
   val vertexShader =
-"""#ifdef GL_ES
-#version 100
-precision mediump float;
-precision mediump int;
-#else
-#version 110
-#endif
-uniform mat4    uniform_Projection;
-attribute vec4  attribute_Position;
-attribute vec4  attribute_Color;
-varying vec4    varying_Color;
-void main(void)
-{
-  varying_Color = attribute_Color;
-  gl_Position = uniform_Projection * attribute_Position;
+"""
+#version 330 core
+
+layout(location = 0) in vec3 vertexPosition_modelspace;
+layout(location = 1) in vec2 vertexUV;
+
+out vec2 UV;
+
+uniform mat4 MVP;
+
+void main() {
+  gl_Position = MVP * vec4(vertexPosition_modelspace, 1);
+  UV = vertexUV;
 }
 """
 
@@ -86,18 +84,16 @@ void main(void)
    * sent to the GPU driver for compilation.
    */
   val fragmentShader =
-"""#ifdef GL_ES
-#version 100
-precision mediump float;
-precision mediump int;
-#else
-#version 110
-#endif
+"""
+#version 330 core
+in vec2 UV;
 
-varying   vec4    varying_Color;
-void main (void)
-{
-  gl_FragColor = varying_Color;
+out vec3 color;
+
+uniform sampler2D myTextureSampler;
+
+void main () {
+  color = texture( myTextureSampler, UV ).rgb;
 }
 """
   /* Introducing projection matrix helper functions
@@ -179,7 +175,7 @@ void main (void)
 
 
   /* variables */
-  var (shaderProgram, vertShader, fragShader) = (0,0,0)
+  var (shaderProgram, vertShader, fragShader, textureID) = (0,0,0,0)
 
   var ModelViewProjectionMatrix_location = 0
 
@@ -198,6 +194,10 @@ void main (void)
     System.err.println("GL_VENDOR: " + gl.glGetString(GL.GL_VENDOR))
     System.err.println("GL_RENDERER: " + gl.glGetString(GL.GL_RENDERER))
     System.err.println("GL_VERSION: " + gl.glGetString(GL.GL_VERSION))
+
+    gl.glEnable(GL.GL_TEXTURE_2D)
+    gl.glEnable(GL.GL_DEPTH_TEST)
+    gl.glDepthFunc(GL.GL_LESS)
 
     vertShader = gl.glCreateShader(GL2ES2.GL_VERTEX_SHADER);
     fragShader = gl.glCreateShader(GL2ES2.GL_FRAGMENT_SHADER);
@@ -253,20 +253,35 @@ void main (void)
     gl.glAttachShader(shaderProgram, vertShader)
     gl.glAttachShader(shaderProgram, fragShader)
 
-    //Associate attribute ids with the attribute names inside
-    //the vertex shader.
-    gl.glBindAttribLocation(shaderProgram, 0, "attribute_Position")
-    gl.glBindAttribLocation(shaderProgram, 1, "attribute_Color")
-
     gl.glLinkProgram(shaderProgram)
 
     //Get a id number to the uniform_Projection matrix
     //so that we can update it.
-    ModelViewProjectionMatrix_location = gl.glGetUniformLocation(shaderProgram, "uniform_Projection")
+    ModelViewProjectionMatrix_location = gl.glGetUniformLocation(shaderProgram, "MVP")
 
+    /* plumb up the texture */
+
+    /* get the textureID for our texture sampler */
+    textureID = gl.glGetUniformLocation(shaderProgram, "myTextureSampler")
+
+
+
+    initTexture(gl)
     initVBO(gl)
   }
 
+  var texture:MyTexture = _
+  def initTexture(gl:GL2ES2):Unit = {
+
+    val pixels = Array[Integer](
+      255, 0,   0,   255,
+      0,   255, 0,   255,
+      0,   0,   255, 255,
+      255, 255, 0,   255
+    )
+
+    texture = new MyTexture( gl, pixels, 2, 2 )
+  }
 
   var circle:Circle = _
   var circle2:Circle = _
@@ -275,10 +290,12 @@ void main (void)
     gl.glEnableVertexAttribArray(0)
     gl.glEnableVertexAttribArray(1)
 
+
     circle = new Circle(gl, 1.2f, 6)
     circle2 = new Circle(gl, 0.8f, 4)
-
   }
+
+
 
   def dispose(drawable:GLAutoDrawable) = {
     System.out.println("cleanup, remember to release shaders")
@@ -291,6 +308,7 @@ void main (void)
     gl.glDeleteProgram(shaderProgram)
     circle.dispose
     circle2.dispose
+    texture.dispose
   }
 
   
@@ -306,6 +324,7 @@ void main (void)
   }
 
   def render(drawable:GLAutoDrawable) = {
+    System.out.println("rendering a frame")
     val gl = drawable.getGL().getGL2ES2()
     gl.glClearColor(1,0,1,1) //purple
     gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -344,11 +363,14 @@ void main (void)
     // using the uniform location id obtained during the init part.
     gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, multiply(view_projection, model1_matrix ), 0)
 
+    /* activate texture unit 0 */
+    gl.glActiveTexture(GL.GL_TEXTURE0);
+    texture.bind
+    /* bind the sampler from our shader to texture unit 0 */
+    gl.glUniform1i(textureID, 0)
 
-    // bind the vertices
+    // draw some circles
     circle.draw
-
-    // draw some triangles
 
     gl.glUniformMatrix4fv(ModelViewProjectionMatrix_location, 1, false, multiply(view_projection, model2_matrix ), 0)
 

@@ -21,4 +21,8 @@ class EasyArrayBuffer(val points:Array[Float], val gl:GL2ES2) {
   def dispose = {
     gl.glDeleteBuffers(1, Array(vboIndex), 0)
   }
+
+  def get(i:Integer) = {
+    points(i)
+  }
 }
