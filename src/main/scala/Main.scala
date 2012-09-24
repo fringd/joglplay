@@ -34,6 +34,10 @@ import javax.media.opengl.GLProfile
 import javax.media.opengl.GLCapabilities
 import javax.media.opengl.GLContext
 import com.jogamp.newt.opengl.GLWindow
+import java.awt.event.WindowListener
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
+import java.awt.Window
 
 import com.jogamp.newt.awt.NewtCanvasAWT
 import com.jogamp.opengl.util.GLArrayDataServer
@@ -122,6 +126,15 @@ object Main {
     frame.add(b); */
 
     frame.setVisible(true)
+
+    frame.addWindowListener(new WindowAdapter {
+      override def windowClosing(e:WindowEvent):Unit = {
+        val  w = e.getWindow()
+        w.setVisible(false)
+        w.dispose()
+        System.exit(0)
+      }
+    });
 
     canvas.addGLEventListener(MyScene)
     val animator = new FPSAnimator(canvas,60)

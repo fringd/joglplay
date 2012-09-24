@@ -291,8 +291,9 @@ void main (void)
     gl.glDeleteProgram(shaderProgram)
     circle.dispose
     circle2.dispose
-    System.exit(0)
   }
+
+  
 
   def reshape(drawable:GLAutoDrawable, x:Int, y:Int, width:Int, height:Int) = {
   }
