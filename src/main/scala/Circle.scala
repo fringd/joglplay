@@ -33,7 +33,7 @@ class Circle( val gl:GL2ES2, val radius:Float, val sides:Integer ) {
 
       /* map [-radius,radius] to [0,1] */
       uvCoords(2*i)   = (x/radius + 1.0f) / 2.0f
-      uvCoords(2*i+1) = (y/radius + 1.0f) / 2.0f
+      uvCoords(2*i+1) = (-1.0f*y/radius + 1.0f) / 2.0f
     }
     new EasyArrayBuffer(uvCoords, gl)
   }

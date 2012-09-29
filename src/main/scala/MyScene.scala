@@ -324,7 +324,6 @@ void main () {
   }
 
   def render(drawable:GLAutoDrawable) = {
-    System.out.println("rendering a frame")
     val gl = drawable.getGL().getGL2ES2()
     gl.glClearColor(1,0,1,1) //purple
     gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
