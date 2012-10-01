@@ -42,12 +42,13 @@ object MyScene extends GLEventListener {
 
   val vertexShader =
 """
-#version 330 core
+#version 100
+precision mediump float;
 
-layout(location = 0) in vec3 vertexPosition_modelspace;
-layout(location = 1) in vec2 vertexUV;
+attribute vec3 vertexPosition_modelspace;
+attribute vec2 vertexUV;
 
-out vec2 UV;
+varying vec2 UV;
 
 uniform mat4 MVP;
 
@@ -85,15 +86,14 @@ void main() {
    */
   val fragmentShader =
 """
-#version 330 core
-in vec2 UV;
-
-out vec3 color;
+#version 100
+precision mediump float;
+varying vec2 UV;
 
 uniform sampler2D myTextureSampler;
 
 void main () {
-  color = texture( myTextureSampler, UV ).rgb;
+  gl_FragColor = texture2D( myTextureSampler, UV );
 }
 """
   /* Introducing projection matrix helper functions
